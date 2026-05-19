@@ -8,7 +8,7 @@ app.use(cors());
 const port = process.env.PORT || 5000;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://ideavault:z5jiJq9cRlotHIEW@cluster0.wenolut.mongodb.net/?appName=Cluster0";
+const uri = MONGODB_URI;
 
 
 const client = new MongoClient(uri, {
@@ -18,6 +18,36 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+const logger = (req, res, next) => {
+  console.log(`${req.method} | ${req.url}`);
+  next();
+};
+
+const verifyToken = async (req, res, next) => {
+  const { authorization } = req.headers;
+  //   console.log(req.headers, 'from verify token');
+  const token = authorization?.split(' ')[1];
+  //   console.log(token);
+
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorize' });
+  }
+
+  try {
+    const JWKS = createRemoteJWKSet(new URL('http://localhost:3000/api/auth/jwks'));
+    const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload;
+
+    next();
+  } catch (error) {
+    console.error('Token validation failed:', error);
+    return res.status(401).json({ message: 'Unauthorize' });
+  }
+};
+
+
+
 
 async function run() {
   try {

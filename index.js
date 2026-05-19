@@ -35,7 +35,7 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    const JWKS = createRemoteJWKSet(new URL('http://localhost:3000/api/auth/jwks'));
+    const JWKS = createRemoteJWKSet(new URL('${process.env.CLIENT_URL}/api/auth/jwks'));
     const { payload } = await jwtVerify(token, JWKS);
     req.user = payload;
 
@@ -61,7 +61,88 @@ const ideasCollection = db.collection('ideas');
 
 // Create API for all ideas
 app.get('/ideas', async (req, res) => {     
-      let cursor = ideasCollection.find();
+      const { search, category } = req.query;
+
+      let query = {};
+
+      if (category && category !== 'All' && category !== 'All Categories') {
+        query.category = {
+          $regex: `^${category}$`,
+          $options: 'i'
+        };
+      }
+
+      if (search) {
+        query.$or = [
+          {
+            title: {
+              $regex: search,
+              $options: 'i',
+            },
+          },
+          {
+            instructor: {
+              $regex: search,
+              $options: 'i',
+            },
+          },
+          {
+            category: {
+              $regex: search,
+              $options: 'i',
+            },
+          },
+          {
+            tags: {
+              $regex: search,
+              $options: 'i',
+            },
+          },
+        ];
+      }
+
+      if (search && category && category !== 'All' && category !== 'All Categories') {
+        query = {
+          $and: [
+            {
+              category: {
+                $regex: `^${category}$`,
+                $options: 'i'
+              }
+            },
+            {
+              $or: [
+                {
+                  title: {
+                    $regex: search,
+                    $options: 'i',
+                  },
+                },
+                {
+                  instructor: {
+                    $regex: search,
+                    $options: 'i',
+                  },
+                },
+                {
+                  category: {
+                    $regex: search,
+                    $options: 'i',
+                  },
+                },
+                {
+                  tags: {
+                    $regex: search,
+                    $options: 'i',
+                  },
+                },
+              ]
+            }
+          ]
+        };
+      }
+  
+  let cursor = ideasCollection.find();
       const result = await cursor.toArray();
       // console.log(result);
       res.send(result);

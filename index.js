@@ -29,6 +29,7 @@ async function run() {
 const db = client.db('ideavault');
 const ideasCollection = db.collection('ideas');
 
+// Create API for all ideas
 app.get('/ideas', async (req, res) => {     
       let cursor = ideasCollection.find();
       const result = await cursor.toArray();
@@ -36,8 +37,16 @@ app.get('/ideas', async (req, res) => {
       res.send(result);
     })
 
+// Create API for featured data
+app.get('/featured', async (req, res) => {
+      const cursor = ideasCollection.find().limit(6);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
-   app.get('/ideas/:ideaId', async (req, res) => {
+
+// Create API for single idea
+app.get('/ideas/:ideaId', async (req, res) => {
       // const ideaId = req.params.ideaId;
       //   console.log(req.user, 'req');
 

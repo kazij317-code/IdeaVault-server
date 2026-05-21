@@ -145,17 +145,20 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/ideas", verifyToken, async (req, res) => {
-      const idea = req.body;
-
-      const newIdea = {
-        ...idea,
-        userEmail: req.user.email, // from token
-        createdAt: new Date(),
-      };
-
-      const result = await ideasCollection.insertOne(newIdea);
-      res.send(result);
+   app.post('/ideas', verifyToken, async (req, res) => {
+      try {
+        const ideaData = req.body;
+        const newidea = {
+          ...ideaData,
+          enrollCount: 0,
+          createdAt: new Date(),
+        };
+        const result = await ideasCollection.insertOne(newidea);
+        res.status(201).send(result);
+      } catch (err) {
+        console.error('Error adding idea:', err);
+        res.status(500).json({ message: 'Internal server error' });
+      }
     });
 
     app.get("/my-ideas", verifyToken, async (req, res) => {
@@ -202,25 +205,29 @@ async function run() {
       }
     });
 
-    app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
-      const { ideaId } = req.params;
-      const query = { _id: new ObjectId(ideaId) };
-      const result = await ideasCollection.findOne(query);
-      res.send(result);
-    });
+   app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
+         // const ideaId = req.params.ideaId;
+         //   console.log(req.user, 'req');
+   
+         const { ideaId } = req.params;
+         //   console.log(ideaId);
+         const query = { _id: new ObjectId(ideaId) };
+         const result = await ideasCollection.findOne(query);
+         res.send(result);
+       });
 
-    app.get("/ideas/meta/:id", async (req, res) => {
-      const id = req.params.id;
+    // app.get("/ideas/meta/:id", async (req, res) => {
+    //   const id = req.params.id;
 
-      const idea = await ideasCollection.findOne({
-        _id: new ObjectId(id),
-      });
+    //   const idea = await ideasCollection.findOne({
+    //     _id: new ObjectId(id),
+    //   });
 
-      res.send({
-        title: idea?.title || "Idea Details",
-        shortDescription: idea?.shortDescription || "",
-      });
-    });
+    //   res.send({
+    //     title: idea?.title || "Idea Details",
+    //     shortDescription: idea?.shortDescription || "",
+    //   });
+    // });
 
     console.log('Pinged your deployment. You successfully connected to MongoDB!');
   } finally {

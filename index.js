@@ -178,15 +178,14 @@ async function run() {
       res.send(result);
     });
 
-    // FIX: Extract dynamic property mapping parameters safely to handle both direct and nested payloads
     app.patch("/ideas/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         
-        // Handles payload configurations safely whether nested as data wrappers or flat structures
+        // Handles flat structures and explicit nested objects from the frontend forms safely
         const incomingData = req.body.ideaData || req.body;
         
-        // Security cleanup: prevent modifying MongoDB immutable structural properties
+        // Ensure immutable ID keys are discarded prior to updating MongoDB
         const { _id, ...cleanUpdateData } = incomingData;
 
         const result = await ideasCollection.updateOne(

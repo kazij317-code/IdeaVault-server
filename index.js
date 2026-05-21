@@ -38,7 +38,7 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    const JWKS = createRemoteJWKSet(new URL('http://localhost:3000/api/auth/jwks'));
+    const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}`));
     const { payload } = await jwtVerify(token, JWKS);
     req.user = payload;
 
@@ -209,6 +209,8 @@ app.delete("/ideas/:id", async (req, res) => {
   // -----------------------
 
 // ----------------------
+// verifyToken, dile distrub kore
+
 app.patch("/ideas/:id", async (req, res) => {
   const id = req.params.id;
 

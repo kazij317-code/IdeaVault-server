@@ -29,9 +29,7 @@ const logger = (req, res, next) => {
 
 const verifyToken = async (req, res, next) => {
   const { authorization } = req.headers;
-  //   console.log(req.headers, 'from verify token');
   const token = authorization?.split(' ')[1];
-  //   console.log(token);
 
   if (!token) {
     return res.status(401).json({ message: 'Unauthorize' });
@@ -51,13 +49,8 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
-    // Send a ping to confirm a successful connection
-    // await client.db('admin').command({ ping: 1 });
     const db = client.db('ideavault');
     const ideasCollection = db.collection('ideas');
-    // const enrollmentCollection = db.collection('enrollments');
 
     app.get('/ideas', async (req, res) => {
       const { search, category } = req.query;
@@ -152,157 +145,87 @@ async function run() {
       res.send(result);
     });
 
-    // app.post('/ideas', verifyToken, async (req, res) => {
-    //   try {
-    //     const ideaData = req.body;
-    //     const newidea = {
-    //       ...ideaData,
-    //       enrollCount: 0,
-    //       createdAt: new Date(),
-    //     };
-    //     const result = await ideasCollection.insertOne(newidea);
-    //     res.status(201).send(result);
-    //   } catch (err) {
-    //     console.error('Error adding idea:', err);
-    //     res.status(500).json({ message: 'Internal server error' });
-    //   }
-    // });
+    app.post("/ideas", verifyToken, async (req, res) => {
+      const idea = req.body;
 
-    // ------------------
-app.post("/ideas", verifyToken, async (req, res) => {
-  const idea = req.body;
+      const newIdea = {
+        ...idea,
+        userEmail: req.user.email, // from token
+        createdAt: new Date(),
+      };
 
-  const newIdea = {
-    ...idea,
-    userEmail: req.user.email, // from token
-    createdAt: new Date(),
-  };
+      const result = await ideasCollection.insertOne(newIdea);
+      res.send(result);
+    });
 
-  const result = await ideasCollection.insertOne(newIdea);
+    app.get("/my-ideas", verifyToken, async (req, res) => {
+      const email = req.user.email;
 
-  res.send(result);
-});
+      const result = await ideasCollection
+        .find({ userEmail: email })
+        .toArray();
 
-  // ------------------
+      res.send(result);
+    });
 
-  // ----------------------
-app.get("/my-ideas", verifyToken, async (req, res) => {
-  const email = req.user.email;
+    app.delete("/ideas/:id", async (req, res) => {
+      const id = req.params.id;
 
-  const result = await ideasCollection
-    .find({ userEmail: email })
-    .toArray();
+      const result = await ideasCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
 
-  res.send(result);
-});
-  // ---------------------
-app.delete("/ideas/:id", async (req, res) => {
-  const id = req.params.id;
+      res.send(result);
+    });
 
-  const result = await ideasCollection.deleteOne({
-    _id: new ObjectId(id),
-  });
+    // FIX: Extract dynamic property mapping parameters safely to handle both direct and nested payloads
+    app.patch("/ideas/:id", verifyToken, async (req, res) => {
+      try {
+        const id = req.params.id;
+        
+        // Handles payload configurations safely whether nested as data wrappers or flat structures
+        const incomingData = req.body.ideaData || req.body;
+        
+        // Security cleanup: prevent modifying MongoDB immutable structural properties
+        const { _id, ...cleanUpdateData } = incomingData;
 
-  res.send(result);
-});
-  // -----------------------
-// app.patch("/ideas/:id", async (req, res) => {
-//   const id = req.params.id;
-//   const updatedData = req.body;
+        const result = await ideasCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: cleanUpdateData,
+          }
+        );
 
-//   const result = await ideasCollection.updateOne(
-//     { _id: new ObjectId(id) },
-//     {
-//       $set: updatedData,
-//     }
-//   );
-
-//   res.send(result);
-// });
-  // ----------------------
-app.patch("/ideas/:id", verifyToken, async (req, res) => {
-  const id = req.params.id;
-
-  const result = await ideasCollection.updateOne(
-    { _id: new ObjectId(id) },
-    {
-      $set: req.body,
-    }
-  );
-
-  res.send(result);
-});
-
-  // ----------------------
-
+        res.send(result);
+      } catch (error) {
+        console.error("Patch Error:", error);
+        res.status(500).json({ message: "Internal update failed" });
+      }
+    });
 
     app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
-      // const ideaId = req.params.ideaId;
-      //   console.log(req.user, 'req');
-
       const { ideaId } = req.params;
-      //   console.log(ideaId);
       const query = { _id: new ObjectId(ideaId) };
       const result = await ideasCollection.findOne(query);
       res.send(result);
     });
 
-    // --------------------
-app.get("/ideas/meta/:id", async (req, res) => {
-  const id = req.params.id;
+    app.get("/ideas/meta/:id", async (req, res) => {
+      const id = req.params.id;
 
-  const idea = await ideasCollection.findOne({
-    _id: new ObjectId(id),
-  });
+      const idea = await ideasCollection.findOne({
+        _id: new ObjectId(id),
+      });
 
-  res.send({
-    title: idea.title,
-    shortDescription: idea.shortDescription,
-  });
-});
-
-    // ---------------
-
-    // app.get('/enrollments/:userId', verifyToken, async (req, res) => {
-    //   const { userId } = req.params;
-    //   const result = await enrollmentCollection.find({ userId: userId }).toArray();
-    //   res.send(result);
-    // });
-
-    // app.patch('/enrollments/:ideaId', verifyToken, async (req, res) => {
-    //   //   console.log('from enrollment');
-
-    //   const { ideaId } = req.params;
-    //   const enrollmentData = req.body;
-
-    //   const idea = await ideasCollection.findOne({ _id: new ObjectId(ideaId) });
-
-    //   if (!idea) {
-    //     return res.status(404).json({ message: 'idea not found' });
-    //   }
-    //   await ideasCollection.updateOne(
-    //     { _id: new ObjectId(ideaId) },
-    //     {
-    //       $inc: { enrollCount: 1 },
-    //       $set: {
-    //         lastEnrolledAt: new Date(),
-    //       },
-    //     }
-    //   );
-    //   //   console.log(enrollmentData);
-
-    //   const result = await enrollmentCollection.insertOne({
-    //     ...enrollmentData,
-    //     enrolledAt: new Date(),
-    //   });
-
-    //   res.send(result);
-    // });
+      res.send({
+        title: idea?.title || "Idea Details",
+        shortDescription: idea?.shortDescription || "",
+      });
+    });
 
     console.log('Pinged your deployment. You successfully connected to MongoDB!');
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
   }
 }
 run().catch(console.dir);

@@ -152,21 +152,80 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/ideas', verifyToken, async (req, res) => {
-      try {
-        const ideaData = req.body;
-        const newidea = {
-          ...ideaData,
-          enrollCount: 0,
-          createdAt: new Date(),
-        };
-        const result = await ideasCollection.insertOne(newidea);
-        res.status(201).send(result);
-      } catch (err) {
-        console.error('Error adding idea:', err);
-        res.status(500).json({ message: 'Internal server error' });
-      }
-    });
+    // app.post('/ideas', verifyToken, async (req, res) => {
+    //   try {
+    //     const ideaData = req.body;
+    //     const newidea = {
+    //       ...ideaData,
+    //       // enrollCount: 0,
+    //       userEmail: req.user.email, // from token
+    //       createdAt: new Date(),
+    //     };
+    //     const result = await ideasCollection.insertOne(newidea);
+    //     res.status(201).send(result);
+    //   } catch (err) {
+    //     console.error('Error adding idea:', err);
+    //     res.status(500).json({ message: 'Internal server error' });
+    //   }
+    // });
+
+
+    // ------------------
+app.post("/ideas", verifyToken, async (req, res) => {
+  const idea = req.body;
+
+  const newIdea = {
+    ...idea,
+    userEmail: req.user.email, // from token
+    createdAt: new Date(),
+  };
+
+  const result = await ideasCollection.insertOne(newIdea);
+
+  res.send(result);
+});
+  // ------------------
+
+// ----------------------
+app.get("/my-ideas", verifyToken, async (req, res) => {
+  const email = req.user.email;
+
+  const result = await ideasCollection
+    .find({ userEmail: email })
+    .toArray();
+
+  res.send(result);
+});
+  // ---------------------
+app.delete("/ideas/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await ideasCollection.deleteOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send(result);
+});
+  // -----------------------
+
+// ----------------------
+app.patch("/ideas/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await ideasCollection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: req.body,
+    }
+  );
+
+  res.send(result);
+});
+
+  // ----------------------
+
+
+
 
     app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
       // const ideaId = req.params.ideaId;

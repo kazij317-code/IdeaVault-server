@@ -308,7 +308,7 @@ app.get("/ideas/meta/:id", async (req, res) => {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('Hello Assignment9!');
 });
 
 app.listen(port, () => {

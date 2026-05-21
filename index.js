@@ -220,7 +220,7 @@ app.delete("/ideas/:id", async (req, res) => {
 //   res.send(result);
 // });
   // ----------------------
-app.patch("/ideas/:id", async (req, res) => {
+app.patch("/ideas/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
 
   const result = await ideasCollection.updateOne(
@@ -246,6 +246,22 @@ app.patch("/ideas/:id", async (req, res) => {
       const result = await ideasCollection.findOne(query);
       res.send(result);
     });
+
+    // --------------------
+app.get("/ideas/meta/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const idea = await ideasCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send({
+    title: idea.title,
+    shortDescription: idea.shortDescription,
+  });
+});
+
+    // ---------------
 
     // app.get('/enrollments/:userId', verifyToken, async (req, res) => {
     //   const { userId } = req.params;

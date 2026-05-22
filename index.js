@@ -5,7 +5,22 @@ const cors = require('cors');
 const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 dotenv.config();
 const app = express();
-app.use(cors());
+// app.use(cors());
+const allowedOrigins = [
+  'https://idea-vault-client-pi.vercel.app',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 const port = process.env.PORT || 5000;
 

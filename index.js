@@ -247,16 +247,17 @@ async function run() {
 
     app.get("/ideas/:ideaId", verifyToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    // Change "id" to "ideaId" to match your route path parameter
+    const { ideaId } = req.params;
 
-    if (!ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(ideaId)) {
       return res.status(400).send({
         message: "Invalid idea id",
       });
     }
 
     const result = await ideasCollection.findOne({
-      _id: new ObjectId(id),
+      _id: new ObjectId(ideaId),
     });
 
     if (!result) {
@@ -268,10 +269,7 @@ async function run() {
     res.send(result);
   } catch (error) {
     console.log(error);
-
-    res.status(500).send({
-      message: "Server error",
-    });
+    res.status(500).send({ message: "Server error" });
   }
 });
 

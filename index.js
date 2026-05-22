@@ -180,8 +180,10 @@ async function run() {
       res.send(result);
     });
 
+// verifyToken, 
+
     // FIX: Extract dynamic property mapping parameters safely to handle both direct and nested payloads
-    app.patch("/ideas/:id", verifyToken, async (req, res) => {
+    app.patch("/ideas/:id", async (req, res) => {
       try {
         const id = req.params.id;
         

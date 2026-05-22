@@ -145,7 +145,9 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/ideas", verifyToken, async (req, res) => {
+
+    // verifyToken, 
+    app.post("/ideas", async (req, res) => {
       const idea = req.body;
 
       const newIdea = {

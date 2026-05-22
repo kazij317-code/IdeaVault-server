@@ -56,18 +56,23 @@ const logger = (req, res, next) => {
 // };
 
 const verifyToken = async (req, res, next) => {
-  const authorization = req.headers.authorization;
-  const token = authorization?.split(" ")[1];
-
-  console.log("TOKEN:", token);
-
-  if (!token) {
-    return res.status(401).json({
-      message: "Unauthorized",
-    });
-  }
-
   try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).send({
+        message: "Unauthorized",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).send({
+        message: "Unauthorized",
+      });
+    }
+
     const JWKS = createRemoteJWKSet(
       new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
     );
@@ -78,9 +83,9 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Token validation failed:", error);
+    console.log("verify error:", error);
 
-    return res.status(401).json({
+    return res.status(401).send({
       message: "Unauthorized",
     });
   }
@@ -245,19 +250,19 @@ async function run() {
     });
 // ideaId
 
-    app.get("/ideas/:ideaId", verifyToken, async (req, res) => {
+    app.get("/ideas/:id", verifyToken, async (req, res) => {
   try {
     // Change "id" to "ideaId" to match your route path parameter
-    const { ideaId } = req.params;
+    const { id } = req.params;
 
-    if (!ObjectId.isValid(ideaId)) {
+    if (!ObjectId.isValid(id)) {
       return res.status(400).send({
-        message: "Invalid idea id",
+        message: "Invalid id",
       });
     }
 
     const result = await ideasCollection.findOne({
-      _id: new ObjectId(ideaId),
+      _id: new ObjectId(id),
     });
 
     if (!result) {

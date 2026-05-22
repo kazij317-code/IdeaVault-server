@@ -179,7 +179,7 @@ async function run() {
     });
 
     // FIX: Extract dynamic property mapping parameters safely to handle both direct and nested payloads
-    app.patch("/ideas/:id", async (req, res) => {
+    app.patch("/ideas/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         
@@ -203,7 +203,9 @@ async function run() {
       }
     });
 
-    app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
+    // logger, verifyToken, 
+
+    app.get('/ideas/:ideaId', async (req, res) => {
       const { ideaId } = req.params;
       const query = { _id: new ObjectId(ideaId) };
       const result = await ideasCollection.findOne(query);

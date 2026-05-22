@@ -190,7 +190,8 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/ideas", verifyToken, async (req, res) => {
+// verifyToken, 
+    app.post("/ideas", async (req, res) => {
       const idea = req.body;
 
       const newIdea = {
@@ -248,9 +249,9 @@ async function run() {
         res.status(500).json({ message: "Internal update failed" });
       }
     });
-// ideaId
+// ideaId  verifyToken, 
 
-    app.get("/ideas/:id", verifyToken, async (req, res) => {
+    app.get("/ideas/:id", async (req, res) => {
   try {
     // Change "id" to "ideaId" to match your route path parameter
     const { id } = req.params;

@@ -243,8 +243,9 @@ async function run() {
         res.status(500).json({ message: "Internal update failed" });
       }
     });
+// ideaId
 
-    app.get("/ideas/:id", verifyToken, async (req, res) => {
+    app.get("/ideas/:ideaId", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 

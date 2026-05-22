@@ -5,21 +5,13 @@ const cors = require('cors');
 const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 dotenv.config();
 const app = express();
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      process.env.CLIENT_URL,
-    ],
-    credentials: true,
-  })
-);
+app.use(cors());
 app.use(express.json());
 const port = process.env.PORT || 5000;
 
 const uri = process.env.MONGODB_URI;
 
-// const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -35,62 +27,25 @@ const logger = (req, res, next) => {
   next();
 };
 
-// const verifyToken = async (req, res, next) => {
-//   const { authorization } = req.headers;
-//   const token = authorization?.split(' ')[1];
-
-//   if (!token) {
-//     return res.status(401).json({ message: 'Unauthorize' });
-//   }
-
-//   try {
-//     const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
-//     const { payload } = await jwtVerify(token, JWKS);
-//     req.user = payload;
-
-//     next();
-//   } catch (error) {
-//     console.error('Token validation failed:', error);
-//     return res.status(401).json({ message: 'Unauthorize' });
-//   }
-// };
-
 const verifyToken = async (req, res, next) => {
+  const { authorization } = req.headers;
+  const token = authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorize' });
+  }
+
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).send({
-        message: "Unauthorized",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).send({
-        message: "Unauthorized",
-      });
-    }
-
-    const JWKS = createRemoteJWKSet(
-      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
-    );
-
+    const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
     const { payload } = await jwtVerify(token, JWKS);
-
     req.user = payload;
 
     next();
   } catch (error) {
-    console.log("verify error:", error);
-
-    return res.status(401).send({
-      message: "Unauthorized",
-    });
+    console.error('Token validation failed:', error);
+    return res.status(401).json({ message: 'Unauthorize' });
   }
 };
-
 
 async function run() {
   try {
@@ -190,18 +145,22 @@ async function run() {
       res.send(result);
     });
 
-// verifyToken, 
-    app.post("/ideas", async (req, res) => {
-      const idea = req.body;
 
-      const newIdea = {
-        ...idea,
-        userEmail: req.user.email, // from token
-        createdAt: new Date(),
-      };
-
-      const result = await ideasCollection.insertOne(newIdea);
-      res.send(result);
+    // verifyToken, 
+    app.post('/ideas', verifyToken, async (req, res) => {
+      try {
+        const ideaData = req.body;
+        const newidea = {
+          ...ideaData,
+          userEmail: req.user.email,   // <-- add this
+          createdAt: new Date(),
+        };
+        const result = await ideasCollection.insertOne(newidea);
+        res.status(201).send(result);
+      } catch (err) {
+        console.error('Error adding idea:', err);
+        res.status(500).json({ message: 'Internal server error' });
+      }
     });
 
     app.get("/my-ideas", verifyToken, async (req, res) => {
@@ -224,16 +183,16 @@ async function run() {
       res.send(result);
     });
 
-// verifyToken, 
-
+    // verifyToken, 
+    // FIX: Extract dynamic property mapping parameters safely to handle both direct and nested payloads
     app.patch("/ideas/:id", async (req, res) => {
       try {
-        const id = req.params.id;
+          const id = req.params.id;
         
-        // Handles flat structures and explicit nested objects from the frontend forms safely
+        // Handles payload configurations safely whether nested as data wrappers or flat structures
         const incomingData = req.body.ideaData || req.body;
         
-        // Ensure immutable ID keys are discarded prior to updating MongoDB
+        // Security cleanup: prevent modifying MongoDB immutable structural properties
         const { _id, ...cleanUpdateData } = incomingData;
 
         const result = await ideasCollection.updateOne(
@@ -249,35 +208,15 @@ async function run() {
         res.status(500).json({ message: "Internal update failed" });
       }
     });
-// ideaId  verifyToken, 
 
-    app.get("/ideas/:id", async (req, res) => {
-  try {
-    // Change "id" to "ideaId" to match your route path parameter
-    const { id } = req.params;
+    // logger, verifyToken, 
 
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send({
-        message: "Invalid id",
-      });
-    }
-
-    const result = await ideasCollection.findOne({
-      _id: new ObjectId(id),
+    app.get('/ideas/:ideaId', verifyToken, async (req, res) => {
+      const { ideaId } = req.params;
+      const query = { _id: new ObjectId(ideaId) };
+      const result = await ideasCollection.findOne(query);
+      res.send(result);
     });
-
-    if (!result) {
-      return res.status(404).send({
-        message: "Idea not found",
-      });
-    }
-
-    res.send(result);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ message: "Server error" });
-  }
-});
 
     app.get("/ideas/meta/:id", async (req, res) => {
       const id = req.params.id;

@@ -244,12 +244,35 @@ async function run() {
       }
     });
 
-    app.get('/ideas/:ideaId', logger, verifyToken, async (req, res) => {
-      const { ideaId } = req.params;
-      const query = { _id: new ObjectId(ideaId) };
-      const result = await ideasCollection.findOne(query);
-      res.send(result);
+    app.get("/ideas/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({
+        message: "Invalid idea id",
+      });
+    }
+
+    const result = await ideasCollection.findOne({
+      _id: new ObjectId(id),
     });
+
+    if (!result) {
+      return res.status(404).send({
+        message: "Idea not found",
+      });
+    }
+
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send({
+      message: "Server error",
+    });
+  }
+});
 
     app.get("/ideas/meta/:id", async (req, res) => {
       const id = req.params.id;
